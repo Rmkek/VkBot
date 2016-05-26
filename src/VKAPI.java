@@ -6,8 +6,8 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
-public class VKAPI {
-
+import java.net.URLEncoder;
+class VKAPI {
         private static final String API_VERSION = "5.21";
 
         private static final String AUTH_URL = "https://oauth.vk.com/authorize"
@@ -29,7 +29,7 @@ public class VKAPI {
 
         private final String accessToken;
 
-        public VKAPI(String appId, String accessToken) throws IOException {
+    VKAPI(String appId, String accessToken) throws IOException {
             this.accessToken = accessToken;
             if (accessToken == null || accessToken.isEmpty()) {
                 auth(appId);
@@ -37,8 +37,8 @@ public class VKAPI {
             }
         }
 
-        public void auth(String appId) throws IOException {
-            String reqUrl = AUTH_URL
+    void auth(String appId) throws IOException {
+         String reqUrl = AUTH_URL
                     .replace("{APP_ID}", appId)
                     .replace("{PERMISSIONS}", "photos,messages")
                     .replace("{REDIRECT_URI}", "https://oauth.vk.com/blank.html")
@@ -55,9 +55,14 @@ public class VKAPI {
             return invokeApi("messages.getDialogs", null);
         }
 
-        public String getHistory(String userId, int offset, int count, boolean rev) throws IOException {
+        String getHistory(String receiver, String userId, int offset, int count, boolean rev) throws IOException {
+            if(receiver.equals("user")){
+                receiver = "user_id";
+            } else if(receiver.equals("group")){
+                receiver = "peer_id";
+            }
             return invokeApi("messages.getHistory", Params.create()
-                    .add("user_id", userId)
+                    .add(receiver, userId)
                     .add("offset", String.valueOf(offset))
                     .add("count", String.valueOf(count))
                     .add("rev", rev ? "1" : "0"));
@@ -70,19 +75,31 @@ public class VKAPI {
                     .add("thumb_src", "1"));
         }
 
-        public String sendMessage(String user_id, String message) throws IOException{
-            //TODO: GROUPS, ETC/
-            // /if(user_id.subSequence(0,2).equals("id"))
-            String methodInvoke= "https://api.vk.com/method/{METHOD_NAME}?{PARAMETERS}&access_token={ACCESS_TOKEN}";
-            String reqUrl = methodInvoke
-                          //"https://api.vk.com/method/messages.send?user_id=35933425&message=LUL&access_token=
+    /*
+        If message is going to user - pass a user, and id
+        if message is going to group - pass chat id
+     */
+    String sendMessage(String messageReceiver,String receiverID, String message) throws IOException{
+            if(messageReceiver.equals("user")){
+                messageReceiver = "user_id=";
+            } else if(messageReceiver.equals("group")){
+                messageReceiver = "chat_id=";
+            }
+            String reqUrl = API_REQUEST
                     .replace("{METHOD_NAME}", "messages.send")
-                    .replace("{PARAMETERS}", "user_id=" + user_id + "&" + "message=" + message)
-                    .replace("{ACCESS_TOKEN}", "f434aaf96312c9de4e90a915b51ed55b33b8b008b131ffd86a5153afdb56040741ecf8e0c68278e3650b3");
+                    .replace("{PARAMETERS}", messageReceiver + receiverID + "&" + "message=" + URLEncoder.encode(message))
+                    .replace("{ACCESS_TOKEN}", accessToken);
+            return invokeApi(reqUrl);
+        }
+         String getUser(String user_id) throws IOException{
+            String reqUrl = API_REQUEST
+                    .replace("{METHOD_NAME}", "users.get?")
+                    .replace("{PARAMETERS}", "user_ids=" + user_id + "&" +  "last_name" )
+                    .replace("{ACCESS_TOKEN}", accessToken);
             return invokeApi(reqUrl);
         }
 
-        public String invokeApi(String method, Params params) throws IOException {
+        private String invokeApi(String method, Params params) throws IOException {
             final String parameters = (params == null) ? "" : params.build();
             String reqUrl = API_REQUEST
                     .replace("{METHOD_NAME}", method)
@@ -91,7 +108,7 @@ public class VKAPI {
             return invokeApi(reqUrl);
         }
 
-        public static String invokeApi(String requestUrl) throws IOException {
+        private static String invokeApi(String requestUrl) throws IOException {
             final StringBuilder result = new StringBuilder();
             final URL url = new URL(requestUrl);
             try (InputStream is = url.openStream()) {
@@ -104,7 +121,7 @@ public class VKAPI {
 
         private static class Params {
 
-            public static Params create() {
+             static Params create() {
                 return new Params();
             }
 
@@ -114,12 +131,12 @@ public class VKAPI {
                 params = new HashMap<>();
             }
 
-            public Params add(String key, String value) {
+             Params add(String key, String value) {
                 params.put(key, value);
                 return this;
             }
 
-            public String build() {
+             String build() {
                 if (params.isEmpty()) return "";
                 final StringBuilder result = new StringBuilder();
                 params.keySet().stream().forEach(key -> {
