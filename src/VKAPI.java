@@ -57,16 +57,19 @@ class VKAPI {
 
         String getHistory(String receiver, String userId, int offset, int count, boolean rev) throws IOException {
             if(receiver.equals("user")){
-                receiver = "user_id";
+                receiver = "user_id=";
             } else if(receiver.equals("group")){
-                receiver = "peer_id";
+                receiver = "peer_id=";
             }
-            return invokeApi("messages.getHistory", Params.create()
-                    .add(receiver, userId)
-                    .add("offset", String.valueOf(offset))
-                    .add("count", String.valueOf(count))
-                    .add("rev", rev ? "1" : "0"));
-        }
+
+            String reqURL = API_REQUEST
+                    .replace("{METHOD_NAME}", "messages.getHistory")
+                    .replace("{PARAMETERS}","offset=" + offset + "&"+
+                            "count=" +count +"&" + "user_id=" + userId)
+                    .replace("{ACCESS_TOKEN}", accessToken);
+            return invokeApi(reqURL);
+
+}
 
         public String getAlbums(String userId) throws IOException {
             return invokeApi("photos.getAlbums", Params.create()
@@ -93,9 +96,9 @@ class VKAPI {
         }
          String getUser(String user_id) throws IOException{
             String reqUrl = API_REQUEST
-                    .replace("{METHOD_NAME}", "users.get?")
-                    .replace("{PARAMETERS}", "user_ids=" + user_id + "&" +  "last_name" )
-                    .replace("{ACCESS_TOKEN}", accessToken);
+                    .replace("{METHOD_NAME}", "users.get")
+                    .replace("{PARAMETERS}", "user_ids=" + user_id)
+                    .replace("&access_token={ACCESS_TOKEN}", "");
             return invokeApi(reqUrl);
         }
 
@@ -105,6 +108,7 @@ class VKAPI {
                     .replace("{METHOD_NAME}", method)
                     .replace("{ACCESS_TOKEN}", accessToken)
                     .replace("{PARAMETERS}&", parameters);
+            System.out.println(reqUrl);
             return invokeApi(reqUrl);
         }
 
