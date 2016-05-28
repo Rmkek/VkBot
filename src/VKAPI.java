@@ -27,7 +27,8 @@ class VKAPI {
             + "?{PARAMETERS}"
             + "&v=" + API_VERSION;
     private static Logger log = Logger.getLogger(VKAPI.class.getName());
-        private final String accessToken;
+
+    private final String accessToken;
 
     VKAPI(String appId, String accessToken) throws IOException {
             this.accessToken = accessToken;
@@ -41,18 +42,36 @@ class VKAPI {
         return new VKAPI(appId, accessToken);
     }
 
-    private static String invokeApi(String requestUrl) throws IOException {
+    private static String invokeApi(String requestUrl) {
         final StringBuilder result = new StringBuilder();
-        final URL url = new URL(requestUrl);
-        try (InputStream is = url.openStream()) {
+        try {
+            final URL url = new URL(requestUrl);
+            InputStream is = url.openStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             reader.lines().forEach(result::append);
+            reader.close();
+            is.close();
+        } catch (Exception ex) {
+            try {
+                Thread.sleep(120000);
+                final URL url = new URL(requestUrl);
+                InputStream is = url.openStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                reader.lines().forEach(result::append);
+                reader.close();
+                is.close();
+                return result.toString();
+            } catch (Exception ex2) {
+                ex2.printStackTrace();
+            }
+            ex.printStackTrace();
+            log.log(Level.INFO, "invokeApi used, result: " + result.toString());
+
         }
-        log.log(Level.INFO, "invokeApi used, result: " + result.toString());
         return result.toString();
     }
 
-    private void auth(String appId) throws IOException {
+    static public void auth(String appId) throws IOException {
          String reqUrl = AUTH_URL
                     .replace("{APP_ID}", appId)
                     .replace("{PERMISSIONS}", "photos,messages")
@@ -94,6 +113,13 @@ class VKAPI {
         return invokeApi(reqURL);
     }
 
+    String createChat(String user_ids, String title) throws IOException {
+        String reqURL = API_REQUEST
+                .replace("{METHOD_NAME}", "messages.createChat")
+                .replace("{PARAMETERS}", "user_ids=" + "35933425" + "%2C" + "224005125" + "%2C" + "122430833" + "&title=WTF")
+                .replace("{ACCESS_TOKEN}", accessToken);
+        return invokeApi(reqURL);
+    }
     /*
         If message is going to user - pass a user, and id
         if message is going to group - pass chat id
@@ -110,6 +136,33 @@ class VKAPI {
                     .replace("{ACCESS_TOKEN}", accessToken);
             return invokeApi(reqUrl);
         }
+
+    String sendMessageWithSticker(String messageReceiver, String receiverID, String message, String sticker_id) throws IOException {
+        if (messageReceiver.equals("user")) {
+            messageReceiver = "user_id=";
+        } else if (messageReceiver.equals("group")) {
+            messageReceiver = "chat_id=";
+        }
+        String reqUrl = API_REQUEST
+                .replace("{METHOD_NAME}", "messages.send")
+                .replace("{PARAMETERS}", messageReceiver + receiverID + "&" + "message=" + URLEncoder.encode(message) + "&sticker_id=" + sticker_id)
+                .replace("{ACCESS_TOKEN}", accessToken);
+        return invokeApi(reqUrl);
+    }
+
+    String getWeather(String city) {
+        String WeatherAPI = "api.openweathermap.org/data/2.5/forecast?q=Omsk,us&mode=json&APPID=dcef49ed29cebb5e3f4ad008236f367e"
+                .replace("Omsk", city);
+        return (invokeApi(WeatherAPI));
+    }
+
+    String getWall(String owner_id, String count) { //-119328367
+        String reqUrl = API_REQUEST
+                .replace("{METHOD_NAME}", "wall.get")
+                .replace("{PARAMETERS}", "owner_id=" + owner_id + "&" + "count=" + count)
+                .replace("{ACCESS_TOKEN}", accessToken);
+        return invokeApi(reqUrl);
+    }
 
     String sendMessage(String messageReceiver, String receiverID, String message, String attachment) throws IOException {
         if (messageReceiver.equals("user")) {

@@ -19,15 +19,46 @@ class BotActions extends Bot {
         return JsonData.get("body").getAsString();
     }
 
-    String getPhotoMemes(String jsonMessage) {
-        JsonObject rootObject = BotGSON.getJSONObject(jsonMessage, "response");
+    String getTemp(String Json) {
+        JsonObject rootObject = BotGSON.getJSONObject(Json, "city");
+        JsonArray array = BotGSON.getJSONArray(rootObject, "list");
+        JsonElement element = array.get(0);
+        JsonObject JsonData = element.getAsJsonObject();
+        String temperatures = JsonData.get("main").getAsString() + ":" + JsonData.get("description");
+        return temperatures;
+    }
+
+    String getWallNumber(String jsonWall) {
+        JsonObject rootObject = BotGSON.getJSONObject(jsonWall, "response");
         JsonArray array = BotGSON.getJSONArray(rootObject, "items");
-        int RandomNumber = (int) (Math.random() * 101);
+        int RandomNumber = (int) (Math.random() * 98);
         JsonElement element = array.get(RandomNumber);
         JsonObject JsonData = element.getAsJsonObject();
         return JsonData.get("id").getAsString();
     }
 
+    boolean equalsCitatku(String message) {
+        Pattern p = Pattern.compile(("^.*цитатку.*$"), Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(message);
+        log.log(Level.INFO, "equalsCitatku method called, returning matches");
+        return m.matches();
+    }
+
+    String getPhotoMemes(String jsonMessage) {
+        JsonObject rootObject = BotGSON.getJSONObject(jsonMessage, "response");
+        JsonArray array = BotGSON.getJSONArray(rootObject, "items");
+        int RandomNumber = (int) (Math.random() * 498);
+        JsonElement element = array.get(RandomNumber);
+        JsonObject JsonData = element.getAsJsonObject();
+        return JsonData.get("id").getAsString();
+    }
+
+    boolean equalsROK(String message) {
+        Pattern p = Pattern.compile(("^.*рок.*$"), Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(message);
+        log.log(Level.INFO, "equalsROK method called, returning matches");
+        return m.matches();
+    }
     boolean isLastMessageMem(String lastMessage){
         Pattern p = Pattern.compile(("^.*мем.*$"), Pattern.UNICODE_CASE |Pattern.CASE_INSENSITIVE);
         Matcher m = p.matcher(lastMessage);
